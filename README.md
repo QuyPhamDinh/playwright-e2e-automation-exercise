@@ -83,8 +83,10 @@ to use blob reports for shard merging.
 
 #### Prerequisites and plugins
 
-- A Jenkins agent labeled `docker` with Docker Engine and Docker Compose v2
-  (`docker compose`) installed.
+- A Jenkins agent with Docker Engine and Docker Compose v2 (`docker compose`)
+  installed. The pipeline uses any available agent and verifies Docker access
+  before building; use a node label or job restriction if your Jenkins has
+  separate Docker-capable agents.
 - The Jenkins agent user must be able to run Docker, usually by belonging to the
   Docker group. Verify this with `docker info` on the agent.
 - Jenkins plugins: Pipeline, Git, Credentials Binding, and JUnit. Artifact
