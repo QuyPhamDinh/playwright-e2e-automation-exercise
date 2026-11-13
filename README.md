@@ -119,7 +119,10 @@ its containers, networks, and volumes.
 
 If Docker verification fails, check that Docker is running on the agent, the
 Compose v2 plugin is installed, and the Jenkins service account has permission
-to access `/var/run/docker.sock`. Do not grant broader permissions than required.
+to access `/var/run/docker.sock`. On macOS agents, also ensure the Jenkins
+service PATH includes the Docker CLI location (`/opt/homebrew/bin`,
+`/usr/local/bin`, or Docker Desktop's resources directory). Do not grant broader
+permissions than required.
 
 ## Configuration
 

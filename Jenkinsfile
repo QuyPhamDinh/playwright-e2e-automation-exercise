@@ -21,6 +21,7 @@ pipeline {
     CI = 'true'
     JENKINS = 'true'
     SKIP_UI_AUTH = '0'
+    PATH+DOCKER = '/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin'
     COMPOSE_PROJECT_NAME = "playwright-jenkins-${BUILD_NUMBER}"
   }
 
@@ -38,6 +39,10 @@ pipeline {
           env.COMPOSE_PROJECT_NAME = "playwright-jenkins-${safeJobName}-${env.BUILD_NUMBER}"
         }
         sh '''
+          command -v docker || {
+            echo "Docker CLI is not on the Jenkins PATH. Configure the agent PATH or install Docker for the Jenkins service user."
+            exit 1
+          }
           docker version
           docker compose version
           docker info >/dev/null
