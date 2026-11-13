@@ -15,6 +15,45 @@ export interface CreatedBooking {
   booking: Booking;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export function isBooking(value: unknown): value is Booking {
+  if (!isRecord(value) || !isRecord(value.bookingdates)) {
+    return false;
+  }
+
+  return (
+    typeof value.firstname === 'string' &&
+    typeof value.lastname === 'string' &&
+    typeof value.totalprice === 'number' &&
+    typeof value.depositpaid === 'boolean' &&
+    typeof value.bookingdates.checkin === 'string' &&
+    typeof value.bookingdates.checkout === 'string' &&
+    (value.additionalneeds === undefined || typeof value.additionalneeds === 'string')
+  );
+}
+
+export function isCreatedBooking(value: unknown): value is CreatedBooking {
+  return (
+    isRecord(value) &&
+    typeof value.bookingid === 'number' &&
+    Number.isInteger(value.bookingid) &&
+    value.bookingid > 0 &&
+    isBooking(value.booking)
+  );
+}
+
+export function isBookingSummary(value: unknown): value is { bookingid: number } {
+  return (
+    isRecord(value) &&
+    typeof value.bookingid === 'number' &&
+    Number.isInteger(value.bookingid) &&
+    value.bookingid > 0
+  );
+}
+
 /**
  * Thin typed wrapper over the Restful-Booker API.
  * Tracks every booking it creates so the fixture can clean up after each test.
@@ -31,7 +70,12 @@ export class BookingClient {
   async create(booking: Booking): Promise<CreatedBooking> {
     const response = await this.request.post('/booking', { data: booking });
     expect(response.status(), 'create booking should return 200').toBe(200);
-    const created = (await response.json()) as CreatedBooking;
+    const body: unknown = await response.json();
+    expect(isCreatedBooking(body), 'create response should match the booking schema').toBe(true);
+    if (!isCreatedBooking(body)) {
+      throw new Error('Create booking response did not match the booking schema');
+    }
+    const created = body;
     this.createdIds.push(created.bookingid);
     return created;
   }
@@ -49,16 +93,16 @@ export class BookingClient {
     return this.request.get('/booking', { params: filter });
   }
 
-  update(id: number, booking: Booking, authenticated = true): Promise<APIResponse> {
+  update(id: number, booking: Booking, authenticated = true, token = this.token): Promise<APIResponse> {
     return this.request.put(`/booking/${id}`, {
       data: booking,
-      headers: authenticated ? { Cookie: `token=${this.token}` } : {},
+      headers: authenticated ? { Cookie: `token=${token}` } : {},
     });
   }
 
-  delete(id: number, authenticated = true): Promise<APIResponse> {
+  delete(id: number, authenticated = true, token = this.token): Promise<APIResponse> {
     return this.request.delete(`/booking/${id}`, {
-      headers: authenticated ? { Cookie: `token=${this.token}` } : {},
+      headers: authenticated ? { Cookie: `token=${token}` } : {},
     });
   }
 
