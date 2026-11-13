@@ -31,7 +31,7 @@ export default defineConfig({
       : [['list'], ['html', { open: 'never' }]],
 
   // Baselines are generated in the Linux Playwright container, so no OS suffix is needed.
-  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
+  snapshotPathTemplate: 'tests/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
 
   use: {
     baseURL: env.uiBaseUrl,
