@@ -15,6 +15,19 @@ export interface CreatedBooking {
   booking: Booking;
 }
 
+export interface CleanupFailure {
+  id: number;
+  status: number | null;
+  error: string;
+}
+
+export interface CleanupSummary {
+  attempted: number;
+  deleted: number;
+  alreadyDeleted: number;
+  failures: CleanupFailure[];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -106,11 +119,40 @@ export class BookingClient {
     });
   }
 
-  /** Best-effort teardown: removes anything this test created. */
-  async cleanup(): Promise<void> {
+  /** Best-effort teardown: removes anything this test created and reports failures. */
+  async cleanup(): Promise<CleanupSummary> {
+    const summary: CleanupSummary = {
+      attempted: this.createdIds.length,
+      deleted: 0,
+      alreadyDeleted: 0,
+      failures: [],
+    };
+
     for (const id of this.createdIds) {
-      await this.delete(id).catch(() => undefined);
+      try {
+        const response = await this.delete(id);
+        const status = response.status();
+
+        if (status === 201) {
+          summary.deleted += 1;
+        } else if (status === 404) {
+          summary.alreadyDeleted += 1;
+        } else {
+          summary.failures.push({
+            id,
+            status,
+            error: `Unexpected cleanup response status: ${status}`,
+          });
+        }
+      } catch (error: unknown) {
+        summary.failures.push({
+          id,
+          status: null,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
     this.createdIds.length = 0;
+    return summary;
   }
 }

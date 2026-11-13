@@ -40,10 +40,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   cartPage: async ({ page }, use) => use(new CartPage(page)),
   checkoutPage: async ({ page }, use) => use(new CheckoutPage(page)),
 
-  bookingApi: async ({ request, authToken }, use) => {
+  bookingApi: async ({ request, authToken }, use, testInfo) => {
     const client = new BookingClient(request, authToken);
     await use(client);
-    await client.cleanup();
+    const cleanupSummary = await client.cleanup();
+    await testInfo.attach('booking-cleanup.json', {
+      body: JSON.stringify(cleanupSummary, null, 2),
+      contentType: 'application/json',
+    });
+    if (cleanupSummary.failures.length > 0) {
+      console.warn('Booking cleanup failures:', JSON.stringify(cleanupSummary.failures));
+    }
   },
 });
 
