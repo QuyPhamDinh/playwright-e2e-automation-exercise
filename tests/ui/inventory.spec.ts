@@ -11,14 +11,19 @@ test.describe('Inventory', () => {
 
   test('sorts by price, low to high', async ({ inventoryPage }) => {
     await inventoryPage.sortBy('lohi');
-    const prices = await inventoryPage.productPrices();
-    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    await inventoryPage.expectProductPrices([7.99, 9.99, 15.99, 15.99, 29.99, 49.99]);
   });
 
   test('sorts by name, Z to A', async ({ inventoryPage }) => {
     await inventoryPage.sortBy('za');
-    const names = await inventoryPage.productNames();
-    expect(names).toEqual([...names].sort().reverse());
+    await inventoryPage.expectProductNames([
+      'Test.allTheThings() T-Shirt (Red)',
+      'Sauce Labs Onesie',
+      'Sauce Labs Fleece Jacket',
+      'Sauce Labs Bolt T-Shirt',
+      'Sauce Labs Bike Light',
+      'Sauce Labs Backpack',
+    ]);
   });
 
   test('cart badge follows add and remove', async ({ inventoryPage }) => {

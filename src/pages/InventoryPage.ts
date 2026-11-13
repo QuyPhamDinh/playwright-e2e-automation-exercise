@@ -8,6 +8,8 @@ const slug = (productName: string) => productName.toLowerCase().replace(/\s+/g, 
 export class InventoryPage extends BasePage {
   readonly title: Locator;
   readonly items: Locator;
+  readonly itemNames: Locator;
+  readonly itemPrices: Locator;
   readonly sortDropdown: Locator;
   readonly cartLink: Locator;
   readonly cartBadge: Locator;
@@ -16,6 +18,8 @@ export class InventoryPage extends BasePage {
     super(page);
     this.title = page.getByTestId('title');
     this.items = page.getByTestId('inventory-item');
+    this.itemNames = page.getByTestId('inventory-item-name');
+    this.itemPrices = page.getByTestId('inventory-item-price');
     this.sortDropdown = page.getByTestId('product-sort-container');
     this.cartLink = page.getByTestId('shopping-cart-link');
     this.cartBadge = page.getByTestId('shopping-cart-badge');
@@ -42,13 +46,14 @@ export class InventoryPage extends BasePage {
     await this.sortDropdown.selectOption(option);
   }
 
-  async productNames(): Promise<string[]> {
-    return this.page.getByTestId('inventory-item-name').allTextContents();
+  async expectProductNames(names: string[]): Promise<void> {
+    await expect(this.items).toHaveCount(names.length);
+    await expect(this.itemNames).toHaveText(names);
   }
 
-  async productPrices(): Promise<number[]> {
-    const texts = await this.page.getByTestId('inventory-item-price').allTextContents();
-    return texts.map((t) => Number(t.replace('$', '')));
+  async expectProductPrices(prices: number[]): Promise<void> {
+    await expect(this.items).toHaveCount(prices.length);
+    await expect(this.itemPrices).toHaveText(prices.map((price) => `$${price.toFixed(2)}`));
   }
 
   async openCart(): Promise<void> {
