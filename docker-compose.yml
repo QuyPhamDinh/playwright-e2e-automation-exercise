@@ -10,6 +10,9 @@ x-common: &common
     API_BASE_URL: ${API_BASE_URL:-https://restful-booker.herokuapp.com}
     API_USER: ${API_USER:-admin}
     API_PASSWORD: ${API_PASSWORD:-password123}
+    CI: ${CI:-false}
+    JENKINS: ${JENKINS:-false}
+    SKIP_UI_AUTH: ${SKIP_UI_AUTH:-0}
   volumes:
     - ./playwright-report:/app/playwright-report
     - ./test-results:/app/test-results

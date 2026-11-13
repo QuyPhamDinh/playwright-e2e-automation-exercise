@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { AUTH_FILE, env } from './src/config/env';
 
 const isCI = !!process.env.CI;
+const isJenkins = process.env.JENKINS === 'true';
 
 export default defineConfig({
   testDir: './tests',
@@ -17,10 +18,17 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: 'disabled' },
   },
 
-  // Blob reports let each CI shard upload its own results; a final job merges them.
-  reporter: isCI
-    ? [['blob'], ['list'], ['github']]
-    : [['list'], ['html', { open: 'never' }]],
+  // Jenkins publishes JUnit and the HTML report directly from the workspace.
+  // GitHub Actions keeps its blob reports so the workflow can merge CI shards.
+  reporter: isJenkins
+    ? [
+        ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        ['list'],
+      ]
+    : isCI
+      ? [['blob'], ['list'], ['github']]
+      : [['list'], ['html', { open: 'never' }]],
 
   // Baselines are generated in the Linux Playwright container, so no OS suffix is needed.
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',

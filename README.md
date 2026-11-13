@@ -75,6 +75,50 @@ Keep the image tag in `Dockerfile`, `docker-compose.yml` and the workflow in ste
 4. **visual**: runs in the Playwright container when baselines exist
 5. A daily scheduled run doubles as a canary check against the live targets
 
+### Jenkins
+
+The root [`Jenkinsfile`](./Jenkinsfile) runs the existing Compose `tests` service
+inside the Playwright Docker image. GitHub Actions remains unchanged and continues
+to use blob reports for shard merging.
+
+#### Prerequisites and plugins
+
+- A Jenkins agent labeled `docker` with Docker Engine and Docker Compose v2
+  (`docker compose`) installed.
+- The Jenkins agent user must be able to run Docker, usually by belonging to the
+  Docker group. Verify this with `docker info` on the agent.
+- Jenkins plugins: Pipeline, Git, Credentials Binding, and JUnit. Artifact
+  archiving is provided by Jenkins core.
+
+#### Create a Pipeline from SCM job
+
+1. Create a new **Pipeline** job in Jenkins.
+2. Under **Pipeline**, select **Pipeline script from SCM**.
+3. Select **Git**, enter
+   `https://github.com/QuyPhamDinh/playwright-e2e-framework.git`, choose the
+   `main` branch, and set the script path to `Jenkinsfile`.
+4. Configure a webhook or polling trigger as appropriate for the repository.
+5. Start a build and select the `TEST_SUITE` parameter. It defaults to `smoke`;
+   available choices are `all`, `smoke`, `ui`, `api`, `a11y`, and `visual`.
+
+#### Credentials and reports
+
+Create a Jenkins **Username with password** credential with ID
+`restful-booker-api`. The pipeline binds it only to `API_USER` and
+`API_PASSWORD` while the test container runs; values are not printed. Configure
+`UI_BASE_URL` and `API_BASE_URL` as agent or job environment variables when
+targeting non-demo environments, using the existing variable names.
+
+The Jenkins reporter writes JUnit XML to `test-results/junit.xml` and the HTML
+report to `playwright-report/`. Jenkins publishes the JUnit results and archives
+the HTML report, screenshots, traces, and videos even when tests fail. Reports
+remain in the workspace until Jenkins archives them; Compose cleanup removes only
+its containers, networks, and volumes.
+
+If Docker verification fails, check that Docker is running on the agent, the
+Compose v2 plugin is installed, and the Jenkins service account has permission
+to access `/var/run/docker.sock`. Do not grant broader permissions than required.
+
 ## Configuration
 
 Targets and credentials are environment variables with public-demo defaults. See `.env.example`.
