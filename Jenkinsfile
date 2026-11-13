@@ -17,13 +17,13 @@ pipeline {
     )
   }
 
-  environment {
-    CI = 'true'
-    JENKINS = 'true'
-    SKIP_UI_AUTH = '0'
-    PATH+DOCKER = '/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin'
-    COMPOSE_PROJECT_NAME = "playwright-jenkins-${BUILD_NUMBER}"
-  }
+environment {
+  CI = 'true'
+  JENKINS = 'true'
+  SKIP_UI_AUTH = '0'
+  PATH = "/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
+  COMPOSE_PROJECT_NAME = "playwright-jenkins-${BUILD_NUMBER}"
+}
 
   stages {
     stage('Checkout source') {
