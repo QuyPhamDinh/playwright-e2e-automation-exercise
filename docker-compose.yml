@@ -1,0 +1,28 @@
+# Run the suite in the same container image CI uses, so local and CI results match.
+#   docker compose run --rm tests              full suite (all browsers, API, a11y, visual)
+#   docker compose run --rm visual             visual comparison only
+#   docker compose run --rm visual-update      regenerate visual baselines (Linux, matches CI)
+x-common: &common
+  build: .
+  ipc: host            # Chromium needs more shared memory than Docker's default
+  environment:
+    UI_BASE_URL: ${UI_BASE_URL:-https://www.saucedemo.com}
+    API_BASE_URL: ${API_BASE_URL:-https://restful-booker.herokuapp.com}
+    API_USER: ${API_USER:-admin}
+    API_PASSWORD: ${API_PASSWORD:-password123}
+  volumes:
+    - ./playwright-report:/app/playwright-report
+    - ./test-results:/app/test-results
+    - ./tests/__screenshots__:/app/tests/__screenshots__
+
+services:
+  tests:
+    <<: *common
+
+  visual:
+    <<: *common
+    command: npx playwright test --project=visual
+
+  visual-update:
+    <<: *common
+    command: npx playwright test --project=visual --update-snapshots
