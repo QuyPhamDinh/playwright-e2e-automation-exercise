@@ -107,9 +107,11 @@ to use blob reports for shard merging.
 
 Create a Jenkins **Username with password** credential with ID
 `restful-booker-api`. The pipeline binds it only to `API_USER` and
-`API_PASSWORD` while the test container runs; values are not printed. Configure
-`UI_BASE_URL` and `API_BASE_URL` as agent or job environment variables when
-targeting non-demo environments, using the existing variable names.
+`API_PASSWORD` while API-containing suites (`api`, `smoke`, and `all`) run;
+values are not printed. The `ui`, `a11y`, and `visual` choices do not require
+this credential. Configure `UI_BASE_URL` and `API_BASE_URL` as agent or job
+environment variables when targeting non-demo environments, using the existing
+variable names.
 
 The Jenkins reporter writes JUnit XML to `test-results/junit.xml` and the HTML
 report to `playwright-report/`. Jenkins publishes the JUnit results and archives

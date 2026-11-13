@@ -75,17 +75,25 @@ environment {
           ]
           env.TEST_COMMAND = suiteCommands[params.TEST_SUITE]
           def skipUiAuth = params.TEST_SUITE == 'api' ? '1' : '0'
-
-          withCredentials([
-            usernamePassword(
-              credentialsId: 'restful-booker-api',
-              usernameVariable: 'API_USER',
-              passwordVariable: 'API_PASSWORD'
-            ),
-          ]) {
+          def requiresApiCredentials = ['all', 'smoke', 'api'].contains(params.TEST_SUITE)
+          def runSuite = {
             withEnv(["SKIP_UI_AUTH=${skipUiAuth}"]) {
               sh 'docker compose -p "$COMPOSE_PROJECT_NAME" run --rm tests sh -lc "$TEST_COMMAND"'
             }
+          }
+
+          if (requiresApiCredentials) {
+            withCredentials([
+              usernamePassword(
+                credentialsId: 'restful-booker-api',
+                usernameVariable: 'API_USER',
+                passwordVariable: 'API_PASSWORD'
+              ),
+            ]) {
+              runSuite()
+            }
+          } else {
+            runSuite()
           }
         }
       }
