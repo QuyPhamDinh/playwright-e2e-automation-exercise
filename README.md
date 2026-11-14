@@ -24,7 +24,7 @@ lower-impact findings visible for investigation.
 |---|---|
 | Fixtures | A test-scoped account fixture creates and deletes an account, handles partial setup, and disposes its API context |
 | API client | Typed, form-encoded Automation Exercise account client with runtime response validation and separate HTTP/application-code checks |
-| Page objects | Login page object using `data-qa` locators and web-first assertions |
+| Page objects | Login, product details, cart, and checkout objects using stable locators and web-first assertions |
 | Test data | UUID-based account factory, safe for parallel workers and retries |
 | Cross-browser | Chromium, Firefox, and WebKit run the integrated UI scenario |
 | Accessibility | axe-core scans the login/signup and products pages for WCAG 2.0/2.1 A/AA rules |
@@ -37,6 +37,11 @@ creation, lookup, authentication, duplicate-account rejection, and deletion
 responses, and removes created accounts during fixture teardown. Negative
 authentication cases change only one input at a time. Passwords are not
 included in logs or report attachments.
+
+The SHOP-001 UI/API integration test signs in with the API-created account,
+verifies empty-cart state, adds Blue Top (4) and Men Tshirt (2), and compares
+row-level prices, quantities, line totals, checkout totals, and delivery
+address fields without placing an order.
 
 ## Run it
 

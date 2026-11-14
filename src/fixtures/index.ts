@@ -4,13 +4,19 @@ import { env } from '../config/env';
 import { buildAccount } from '../data/accountFactory';
 import { LoginPage } from '../pages/LoginPage';
 import { ProductsPage } from '../pages/ProductsPage';
+import { CartPage } from '../pages/CartPage';
+import { CheckoutPage } from '../pages/CheckoutPage';
+import { ProductDetailsPage } from '../pages/ProductDetailsPage';
 
 type TestFixtures = {
   account: Account;
   accountState: AccountState;
   apiClient: AccountClient;
+  cartPage: CartPage;
+  checkoutPage: CheckoutPage;
   markAccountDeleted: () => void;
   loginPage: LoginPage;
+  productDetailsPage: ProductDetailsPage;
   productsPage: ProductsPage;
 };
 
@@ -108,7 +114,10 @@ export const test = base.extend<TestFixtures>({
   markAccountDeleted: async ({ accountState }, use) => use(() => {
     accountState.deleted = true;
   }),
+  cartPage: async ({ page }, use) => use(new CartPage(page)),
+  checkoutPage: async ({ page }, use) => use(new CheckoutPage(page)),
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
+  productDetailsPage: async ({ page }, use) => use(new ProductDetailsPage(page)),
   productsPage: async ({ page }, use) => use(new ProductsPage(page)),
 });
 

@@ -22,4 +22,13 @@ export class ProductsPage extends BasePage {
     await expect(this.productCards).not.toHaveCount(0);
     await expect(this.firstProductCard).toContainText('Blue Top');
   }
+
+  async openProduct(name: string, productId: number): Promise<void> {
+    const productCard = this.productCards.filter({ hasText: name });
+    const productLink = productCard.locator(`a[href="/product_details/${productId}"]`);
+    await expect(productLink).toHaveCount(1);
+    await expect(productLink).toContainText('View Product');
+    await productLink.click();
+    await expect(this.page).toHaveURL(new RegExp(`/product_details/${productId}$`));
+  }
 }
