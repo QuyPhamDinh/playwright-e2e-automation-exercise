@@ -1,28 +1,26 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { Account } from '../api/AccountClient';
 
 export function buildAccount(): Account {
-  const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
-  const mobileNumber = Array.from({ length: 9 }, () => randomInt(10)).join('');
-  const name = `Quy ${suffix}`;
+  const email = `qa-${randomUUID()}@example.com`;
 
   return {
-    name,
-    email: `quy.${suffix}@example.com`,
-    password: `Pw-${suffix}-Automation`,
+    name: 'Quy Test',
+    email,
+    password: 'TestOnly!4829',
     title: 'Mr',
-    birth_date: '10',
-    birth_month: '1',
+    birth_date: '15',
+    birth_month: '6',
     birth_year: '1990',
     firstname: 'Quy',
-    lastname: suffix,
-    company: 'Automation Exercise',
-    address1: '1 Test Street',
-    address2: '',
+    lastname: 'Test',
+    company: 'QA Practice',
+    address1: '123 Test Street',
+    address2: 'Unit 2',
     country: 'United States',
-    zipcode: '90012',
+    zipcode: '90001',
     state: 'California',
     city: 'Los Angeles',
-    mobile_number: `555${mobileNumber}`,
+    mobile_number: '2025550142',
   };
 }

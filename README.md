@@ -23,7 +23,7 @@ lower-impact findings visible for investigation.
 | Area | How it's done |
 |---|---|
 | Fixtures | A test-scoped account fixture creates and deletes an account, handles partial setup, and disposes its API context |
-| API client | Typed, form-encoded Automation Exercise account client with separate HTTP and application-code validation |
+| API client | Typed, form-encoded Automation Exercise account client with runtime response validation and separate HTTP/application-code checks |
 | Page objects | Login page object using `data-qa` locators and web-first assertions |
 | Test data | UUID-based account factory, safe for parallel workers and retries |
 | Cross-browser | Chromium, Firefox, and WebKit run the integrated UI scenario |
@@ -32,13 +32,19 @@ lower-impact findings visible for investigation.
 | Reporting | Trace on first retry, screenshots and video on failure, JUnit/HTML/blob reporters |
 | Docker | The same Playwright image is used locally and in CI |
 
+The API suite creates a unique synthetic account per test, validates account
+creation, lookup, and authentication responses, and removes created accounts
+during fixture teardown. Negative authentication cases change only one input at
+a time. Passwords are not included in logs or report attachments.
+
 ## Run it
 
 ```bash
 npm ci
 npx playwright install --with-deps
 
-npm test                  # all browsers
+npm test                  # all configured projects
+npm run test:api          # account API tests
 npm run test:ui           # all three browsers
 npm run test:integrated   # API setup -> UI login -> API cleanup
 npm run test:smoke        # the tagged integrated scenario

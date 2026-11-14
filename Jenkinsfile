@@ -12,7 +12,7 @@ pipeline {
   parameters {
     choice(
       name: 'TEST_SUITE',
-      choices: ['smoke', 'all', 'ui', 'a11y', 'visual'],
+      choices: ['smoke', 'all', 'api', 'ui', 'a11y', 'visual'],
       description: 'Playwright suite to run.'
     )
   }
@@ -66,6 +66,7 @@ environment {
         script {
           def suiteCommands = [
             all: 'npm test',
+            api: 'npm run test:api',
             smoke: 'npm run test:smoke',
             ui: 'npm run test:ui',
             a11y: 'npm run test:a11y',

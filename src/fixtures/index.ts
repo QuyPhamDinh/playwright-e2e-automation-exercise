@@ -7,11 +7,33 @@ import { ProductsPage } from '../pages/ProductsPage';
 
 type TestFixtures = {
   account: Account;
+  apiClient: AccountClient;
   loginPage: LoginPage;
   productsPage: ProductsPage;
 };
 
 export const test = base.extend<TestFixtures>({
+  apiClient: async ({ playwright }, use, testInfo) => {
+    const request = await playwright.request.newContext({
+      baseURL: env.apiBaseUrl,
+      extraHTTPHeaders: { Accept: 'application/json' },
+    });
+
+    try {
+      await use(new AccountClient(request));
+    } finally {
+      try {
+        await request.dispose();
+      } catch (error: unknown) {
+        const disposeError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Account API context disposal failed: ${disposeError.message}`);
+        if (testInfo.status === 'passed') {
+          throw disposeError;
+        }
+      }
+    }
+  },
+
   account: async ({ playwright }, use, testInfo) => {
     const request = await playwright.request.newContext({
       baseURL: env.apiBaseUrl,

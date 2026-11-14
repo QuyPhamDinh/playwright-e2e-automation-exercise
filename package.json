@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:api": "playwright test --project=api",
     "test:ui": "playwright test --project=chromium --project=firefox --project=webkit",
     "test:integrated": "playwright test --project=chromium --project=firefox --project=webkit",
     "test:smoke": "playwright test --grep @smoke",
