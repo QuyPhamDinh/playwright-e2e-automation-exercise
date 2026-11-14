@@ -82,6 +82,12 @@ advertising network requests before navigation; application requests and
 fonts remain untouched. The project fixes
 viewport, locale, timezone, color scheme, browser, and platform through the
 Docker image and Compose platform setting so committed baselines match CI.
+Screenshot comparisons allow zero differing pixels. Repeated comparisons in
+the matched Docker environment produced no rendering noise, so the former
+global 1% pixel-ratio tolerance was broader than necessary for these small
+component screenshots. Before capture, target fonts must be ready and every
+target image must finish loading with a non-zero natural width; broken images
+fail the visual test rather than becoming an accepted baseline.
 
 Accessibility scans attach every axe violation, including rule ID, impact,
 description, affected elements, and help URL. Serious and critical findings

@@ -22,18 +22,31 @@ export async function waitForVisualStability(page: Page, target: Locator): Promi
     await document.fonts.ready;
   });
   await target.locator('img').evaluateAll(async (images) => {
-    await Promise.all(
-      images.map(
-        (image) => {
-          if (!(image instanceof HTMLImageElement) || image.complete) {
-            return Promise.resolve();
-          }
-          return new Promise<void>((resolve) => {
-            image.addEventListener('load', () => resolve(), { once: true });
-            image.addEventListener('error', () => resolve(), { once: true });
-          });
-        },
-      ),
+    const imageElements = images.filter(
+      (image): image is HTMLImageElement => image instanceof HTMLImageElement,
     );
+
+    await Promise.all(
+      imageElements.map((image) => {
+        if (image.complete) {
+          return Promise.resolve();
+        }
+        return new Promise<void>((resolve, reject) => {
+          image.addEventListener('load', () => resolve(), { once: true });
+          image.addEventListener(
+            'error',
+            () => reject(new Error(`Image failed to load: ${image.currentSrc || image.src}`)),
+            { once: true },
+          );
+        });
+      }),
+    );
+
+    const brokenImages = imageElements.filter((image) => image.naturalWidth === 0);
+    if (brokenImages.length > 0) {
+      throw new Error(
+        `Visual target contains ${brokenImages.length} image(s) that did not load successfully`,
+      );
+    }
   });
 }

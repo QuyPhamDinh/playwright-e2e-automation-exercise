@@ -13,7 +13,8 @@ export default defineConfig({
   timeout: 30_000,
   expect: {
     timeout: 5_000,
-    toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: 'disabled' },
+    // Repeated matched-container comparisons produced zero differing pixels.
+    toHaveScreenshot: { maxDiffPixels: 0, animations: 'disabled' },
   },
   snapshotPathTemplate: 'tests/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
 
