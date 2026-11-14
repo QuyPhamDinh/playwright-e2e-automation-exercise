@@ -65,15 +65,19 @@ Review the generated files under `tests/__screenshots__`, then run
 `docker compose run --rm visual` without `--update-snapshots` to compare them.
 Missing baselines fail the visual project. Failed comparisons retain expected,
 actual, and diff images in `test-results` and the Playwright report.
+Compose forces `linux/amd64`, matching the GitHub-hosted Ubuntu runner. On
+Apple Silicon, Docker may use emulation so local baseline generation targets
+the same architecture as CI.
 
 The visual targets intentionally exclude advertising and other page-level
 dynamic content: the login/signup form container and the first product card
 are the only captured regions. The product-card comparison masks only
 third-party `iframe`, Google Ads, and `adsbygoogle` regions; the product card
-UI itself is not masked. The project fixes
+UI itself is not masked. The visual tests also block only known Google
+advertising network requests before navigation; application requests and
+fonts remain untouched. The project fixes
 viewport, locale, timezone, color scheme, browser, and platform through the
-Docker image so committed baselines match CI; local macOS runs may differ
-unless executed through Docker.
+Docker image and Compose platform setting so committed baselines match CI.
 
 Accessibility scans attach every axe violation, including rule ID, impact,
 description, affected elements, and help URL. Serious and critical findings
@@ -89,9 +93,11 @@ application findings, not suppressed or treated as automation failures.
 
 ## CI
 
-`.github/workflows/playwright.yml` runs type checking and two Playwright shards
-covering the integrated UI/API scenario, accessibility, and visual projects,
-then merges their blob reports into one HTML report. It retains diagnostic
+`.github/workflows/playwright.yml` runs type checking, then runs two Playwright
+shards inside the pinned `mcr.microsoft.com/playwright:v1.65.0-noble` image.
+The shards cover the integrated UI/API scenario, accessibility, and visual
+projects, then merge their blob reports into one HTML report. This is the same
+image and `linux/amd64` target used by Compose. It retains diagnostic
 artifacts from failed tests. Jenkins uses the same Docker Compose `tests`
 service and offers `all`, `smoke`, `ui`, `a11y`, and `visual` suite choices.
 

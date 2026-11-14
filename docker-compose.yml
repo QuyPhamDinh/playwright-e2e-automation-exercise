@@ -4,6 +4,7 @@
 #   docker compose run --rm visual-update      explicitly update visual baselines
 x-common: &common
   build: .
+  platform: linux/amd64
   ipc: host            # Chromium needs more shared memory than Docker's default
   environment:
     UI_BASE_URL: ${UI_BASE_URL:-https://automationexercise.com}

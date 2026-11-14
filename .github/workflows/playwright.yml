@@ -26,6 +26,9 @@ jobs:
   test:
     needs: typecheck
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -33,12 +36,7 @@ jobs:
         shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps
       - name: Run tests (shard ${{ matrix.shard }}/2)
         run: npx playwright test --project=chromium --project=firefox --project=webkit --project=a11y --project=visual --shard=${{ matrix.shard }}/2
       - name: Upload blob report
@@ -60,12 +58,10 @@ jobs:
     needs: test
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - run: npm ci
       - uses: actions/download-artifact@v4
         with:
