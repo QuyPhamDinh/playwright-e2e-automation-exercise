@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import type { Account } from '../api/AccountClient';
 
 export function buildAccount(): Account {
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
+  const mobileNumber = Array.from({ length: 9 }, () => randomInt(10)).join('');
   const name = `Quy ${suffix}`;
 
   return {
@@ -22,6 +23,6 @@ export function buildAccount(): Account {
     zipcode: '90012',
     state: 'California',
     city: 'Los Angeles',
-    mobile_number: `555${suffix.slice(0, 9)}`,
+    mobile_number: `555${mobileNumber}`,
   };
 }
