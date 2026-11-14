@@ -76,30 +76,14 @@ docker compose run --rm visual-update
 
 Visual baselines must be generated and reviewed explicitly with
 `docker compose run --rm visual-update`, using the pinned Playwright image
-from [`Dockerfile`](./Dockerfile). Never use the update command in CI.
-Review the generated files under `tests/__screenshots__`, then run
-`docker compose run --rm visual` without `--update-snapshots` to compare them.
-Missing baselines fail the visual project. Failed comparisons retain expected,
-actual, and diff images in `test-results` and the Playwright report.
-Compose forces `linux/amd64`, matching the GitHub-hosted Ubuntu runner. On
-Apple Silicon, Docker may use emulation so local baseline generation targets
-the same architecture as CI.
+from [`Dockerfile`](./Dockerfile). See the [visual testing guide](./docs/visual-testing.md)
+for baseline review, environment matching, masking, and stability details.
 
-The visual targets intentionally exclude advertising and other page-level
-dynamic content: the login/signup form container and the first product card
-are the only captured regions. The product-card comparison masks only
-third-party `iframe`, Google Ads, and `adsbygoogle` regions; the product card
-UI itself is not masked. The visual tests also block only known Google
-advertising network requests before navigation; application requests and
-fonts remain untouched. The project fixes
-viewport, locale, timezone, color scheme, browser, and platform through the
-Docker image and Compose platform setting so committed baselines match CI.
-Screenshot comparisons allow zero differing pixels. Repeated comparisons in
-the matched Docker environment produced no rendering noise, so the former
-global 1% pixel-ratio tolerance was broader than necessary for these small
-component screenshots. Before capture, target fonts must be ready and every
-target image must finish loading with a non-zero natural width; broken images
-fail the visual test rather than becoming an accepted baseline.
+## Visual regression
+
+Visual tests compare focused login/signup and first-product-card regions in Chromium.
+Baselines are generated and reviewed explicitly in the pinned Docker environment; CI never updates them.
+See [docs/visual-testing.md](./docs/visual-testing.md) for commands, masks, and failure artifacts.
 
 Accessibility scans attach every axe violation, including rule ID, impact,
 description, affected elements, and help URL. Serious and critical findings
