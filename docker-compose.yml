@@ -13,6 +13,7 @@ x-common: &common
   volumes:
     - ./playwright-report:/app/playwright-report
     - ./test-results:/app/test-results
+    - ./blob-report:/app/blob-report
     - ./tests/__screenshots__:/app/tests/__screenshots__
 
 services:

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { env } from './src/config/env';
 
-const isCI = !!process.env.CI;
+const isCI = ['true', '1'].includes((process.env.CI ?? '').toLowerCase());
 const isJenkins = process.env.JENKINS === 'true';
 
 export default defineConfig({
