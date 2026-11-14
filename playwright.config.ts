@@ -1,13 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
-import { AUTH_FILE, env } from './src/config/env';
+import { env } from './src/config/env';
 
 const isCI = !!process.env.CI;
 const isJenkins = process.env.JENKINS === 'true';
 
 export default defineConfig({
   testDir: './tests',
-  globalSetup: './src/config/global-setup.ts',
-
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
@@ -17,6 +15,7 @@ export default defineConfig({
     timeout: 5_000,
     toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: 'disabled' },
   },
+  snapshotPathTemplate: 'tests/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
 
   // Jenkins publishes JUnit and the HTML report directly from the workspace.
   // GitHub Actions keeps its blob reports so the workflow can merge CI shards.
@@ -30,47 +29,35 @@ export default defineConfig({
       ? [['blob'], ['list'], ['github']]
       : [['list'], ['html', { open: 'never' }]],
 
-  // Baselines are generated in the Linux Playwright container, so no OS suffix is needed.
-  snapshotPathTemplate: 'tests/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
-
   use: {
     baseURL: env.uiBaseUrl,
-    testIdAttribute: 'data-test',
+    testIdAttribute: 'data-qa',
+    storageState: { cookies: [], origins: [] },
+    viewport: { width: 1280, height: 720 },
+    locale: 'en-US',
+    timezoneId: 'America/Los_Angeles',
+    colorScheme: 'light',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
 
   projects: [
-    // Cross-browser UI regression, authenticated by global setup.
     {
       name: 'chromium',
       testMatch: /ui\/.*\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: AUTH_FILE },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
       testMatch: /ui\/.*\.spec\.ts/,
-      use: { ...devices['Desktop Firefox'], storageState: AUTH_FILE },
+      use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
       testMatch: /ui\/.*\.spec\.ts/,
-      use: { ...devices['Desktop Safari'], storageState: AUTH_FILE },
+      use: { ...devices['Desktop Safari'] },
     },
-
-    // API tests: no browser needed.
-    {
-      name: 'api',
-      testMatch: /api\/.*\.spec\.ts/,
-      use: {
-        baseURL: env.apiBaseUrl,
-        extraHTTPHeaders: { Accept: 'application/json' },
-        trace: 'retain-on-failure',
-      },
-    },
-
-    // Accessibility (axe) and visual regression run in Chromium only.
     {
       name: 'a11y',
       testMatch: /a11y\/.*\.spec\.ts/,

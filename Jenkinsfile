@@ -12,7 +12,7 @@ pipeline {
   parameters {
     choice(
       name: 'TEST_SUITE',
-      choices: ['smoke', 'all', 'ui', 'api', 'a11y', 'visual'],
+      choices: ['smoke', 'all', 'ui', 'a11y', 'visual'],
       description: 'Playwright suite to run.'
     )
   }
@@ -20,7 +20,6 @@ pipeline {
 environment {
   CI = 'true'
   JENKINS = 'true'
-  SKIP_UI_AUTH = '0'
   PATH = "/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
   COMPOSE_PROJECT_NAME = "playwright-jenkins-${BUILD_NUMBER}"
 }
@@ -69,32 +68,14 @@ environment {
             all: 'npm test',
             smoke: 'npm run test:smoke',
             ui: 'npm run test:ui',
-            api: 'npm run test:api',
             a11y: 'npm run test:a11y',
             visual: 'npm run test:visual',
           ]
           env.TEST_COMMAND = suiteCommands[params.TEST_SUITE]
-          def skipUiAuth = params.TEST_SUITE == 'api' ? '1' : '0'
-          def requiresApiCredentials = ['all', 'smoke', 'api'].contains(params.TEST_SUITE)
           def runSuite = {
-            withEnv(["SKIP_UI_AUTH=${skipUiAuth}"]) {
-              sh 'docker compose -p "$COMPOSE_PROJECT_NAME" run --rm tests sh -lc "$TEST_COMMAND"'
-            }
+            sh 'docker compose -p "$COMPOSE_PROJECT_NAME" run --rm tests sh -lc "$TEST_COMMAND"'
           }
-
-          if (requiresApiCredentials) {
-            withCredentials([
-              usernamePassword(
-                credentialsId: 'restful-booker-api',
-                usernameVariable: 'API_USER',
-                passwordVariable: 'API_PASSWORD'
-              ),
-            ]) {
-              runSuite()
-            }
-          } else {
-            runSuite()
-          }
+          runSuite()
         }
       }
     }

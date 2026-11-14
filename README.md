@@ -1,36 +1,32 @@
 # Playwright E2E Framework
 
-End-to-end test framework built with Playwright and TypeScript. It tests two public demo targets: a web shop UI ([Sauce Demo](https://www.saucedemo.com)) and a REST API with token auth ([Restful-Booker](https://restful-booker.herokuapp.com)).
+Playwright and TypeScript framework for [Automation Exercise](https://automationexercise.com).
+The initial scenario demonstrates API setup, UI verification, and API cleanup:
+
+1. Generate a unique account for the test.
+2. Create it through `POST /api/createAccount`.
+3. Open the login page and sign in through the UI.
+4. Verify `Logged in as [name]` and the logout control.
+5. Delete the account through `DELETE /api/deleteAccount` during fixture teardown.
+
+The accessibility suite runs `@axe-core/playwright` against the login/signup
+and products pages with WCAG 2.0 and 2.1 A/AA tags. It attaches all detected
+violations to the report, fails on serious or critical findings, and keeps
+lower-impact findings visible for investigation.
 
 ## What's in it
 
 | Area | How it's done |
 |---|---|
-| Fixtures | `src/fixtures/index.ts` extends Playwright's `test` with page objects, a worker-scoped API auth token, and a `bookingApi` client that cleans up the data it creates |
-| Page objects | `src/pages/`, using `getByTestId` locators and web-first assertions |
-| Test data | Factory in `src/data/bookingFactory.ts` generates unique bookings so parallel workers never collide |
-| Auth | UI session is created once in global setup and reused via `storageState`; login specs opt out and start logged out |
-| API tests | `tests/api/`: auth, create, read, filter, update, delete, negative cases, and 403 without a token |
-| Cross-browser | Chromium, Firefox and WebKit projects run the same UI specs |
-| Parallelism | `fullyParallel` locally; sharded 4 ways in GitHub Actions |
-| Reporting | Trace on first retry, screenshots and video on failure, merged HTML report from all shards |
-| Accessibility | axe-core (WCAG A/AA) fails the build on serious or critical violations and attaches the full result to the report |
-| Visual regression | `toHaveScreenshot` baselines generated and compared inside the Playwright Linux image |
-| Docker | Same image locally and in CI, so results match |
-
-## Layout
-
-```
-src/
-  api/        typed API client
-  config/     env + global setup
-  data/       users and data factories
-  fixtures/   custom test fixtures
-  pages/      page objects
-  utils/      axe helper
-tests/
-  ui/ api/ a11y/ visual/
-```
+| Fixtures | A test-scoped account fixture creates and deletes an account and disposes its API context |
+| API client | Typed, form-encoded Automation Exercise account client with separate HTTP and application-code validation |
+| Page objects | Login page object using `data-qa` locators and web-first assertions |
+| Test data | UUID-based account factory, safe for parallel workers and retries |
+| Cross-browser | Chromium, Firefox, and WebKit run the integrated UI scenario |
+| Accessibility | axe-core scans the login/signup and products pages for WCAG 2.0/2.1 A/AA rules |
+| Visual regression | Chromium compares focused login/signup and first-product-card screenshots |
+| Reporting | Trace on first retry, screenshots and video on failure, JUnit/HTML/blob reporters |
+| Docker | The same Playwright image is used locally and in CI |
 
 ## Run it
 
@@ -38,99 +34,66 @@ tests/
 npm ci
 npx playwright install --with-deps
 
-npm test                  # everything
-npm run test:ui           # UI on all three browsers
-npm run test:api          # API only, no browser needed
-npm run test:smoke        # tests tagged @smoke
-npm run test:a11y         # axe checks
+npm test                  # all browsers
+npm run test:ui           # all three browsers
+npm run test:integrated   # API setup -> UI login -> API cleanup
+npm run test:smoke        # the tagged integrated scenario
+npm run test:a11y         # accessibility scans
+npm run test:visual       # visual comparisons
+npm run test:visual:update # explicitly regenerate visual baselines
+npm run typecheck
 npm run report            # open the last HTML report
 ```
 
-### Visual tests
+Set `UI_BASE_URL` and `API_BASE_URL` to target another compatible environment.
+Defaults are `https://automationexercise.com` and
+`https://automationexercise.com/api`. Account passwords and generated
+authentication state are never written to the repository.
 
-Screenshots differ between operating systems, so baselines are created in the Linux container and committed:
-
-```bash
-docker compose run --rm visual-update   # create or refresh baselines in tests/__screenshots__
-docker compose run --rm visual          # compare against them
-```
-
-The CI visual job skips itself until baselines are committed. You can also generate them from the Actions tab by running the workflow manually with "Regenerate visual baselines" ticked.
-
-### Docker
+## Docker
 
 ```bash
-docker compose run --rm tests           # full suite in the Playwright image
+docker compose run --rm tests
+docker compose run --rm visual
+docker compose run --rm visual-update
 ```
 
-Keep the image tag in `Dockerfile`, `docker-compose.yml` and the workflow in step with the `@playwright/test` version in `package.json`.
+Visual baselines must be generated and reviewed explicitly with
+`docker compose run --rm visual-update`, using the pinned Playwright image
+from [`Dockerfile`](./Dockerfile). Never use the update command in CI.
+Review the generated files under `tests/__screenshots__`, then run
+`docker compose run --rm visual` without `--update-snapshots` to compare them.
+Missing baselines fail the visual project. Failed comparisons retain expected,
+actual, and diff images in `test-results` and the Playwright report.
+
+The visual targets intentionally exclude advertising and other page-level
+dynamic content: the login/signup form container and the first product card
+are the only captured regions. The product-card comparison masks only
+third-party `iframe`, Google Ads, and `adsbygoogle` regions; the product card
+UI itself is not masked. The project fixes
+viewport, locale, timezone, color scheme, browser, and platform through the
+Docker image so committed baselines match CI; local macOS runs may differ
+unless executed through Docker.
+
+Accessibility scans attach every axe violation, including rule ID, impact,
+description, affected elements, and help URL. Serious and critical findings
+fail the tests; lower-impact findings remain visible in the report. The scan
+scope is the rendered login/signup page and products page. Third-party
+advertising and external resources are not treated as application coverage.
+Automated axe scans do not establish full WCAG compliance; manual and
+assistive-technology testing are still required.
+
+The current public-demo scan reports `button-name` (critical) and
+`color-contrast` (serious) findings on both pages. These are reported as
+application findings, not suppressed or treated as automation failures.
 
 ## CI
 
-`.github/workflows/playwright.yml`:
+`.github/workflows/playwright.yml` runs type checking and two Playwright shards
+covering the integrated UI/API scenario, accessibility, and visual projects,
+then merges their blob reports into one HTML report. It retains diagnostic
+artifacts from failed tests. Jenkins uses the same Docker Compose `tests`
+service and offers `all`, `smoke`, `ui`, `a11y`, and `visual` suite choices.
 
-1. **typecheck**: `tsc --noEmit`
-2. **test**: four shards in parallel, each running all browser projects, API and a11y
-3. **report**: merges the shard blob reports into one HTML report (traces, screenshots, videos) and uploads it
-4. **visual**: runs in the Playwright container when baselines exist
-5. A daily scheduled run doubles as a canary check against the live targets
-
-### Jenkins
-
-The root [`Jenkinsfile`](./Jenkinsfile) runs the existing Compose `tests` service
-inside the Playwright Docker image. GitHub Actions remains unchanged and continues
-to use blob reports for shard merging.
-
-#### Prerequisites and plugins
-
-- A Jenkins agent with Docker Engine and Docker Compose v2 (`docker compose`)
-  installed. The pipeline uses any available agent and verifies Docker access
-  before building; use a node label or job restriction if your Jenkins has
-  separate Docker-capable agents.
-- The Jenkins agent user must be able to run Docker, usually by belonging to the
-  Docker group. Verify this with `docker info` on the agent.
-- Jenkins plugins: Pipeline, Git, Credentials Binding, and JUnit. Artifact
-  archiving is provided by Jenkins core.
-
-#### Create a Pipeline from SCM job
-
-1. Create a new **Pipeline** job in Jenkins.
-2. Under **Pipeline**, select **Pipeline script from SCM**.
-3. Select **Git**, enter
-   `https://github.com/QuyPhamDinh/playwright-e2e-framework.git`, choose the
-   `main` branch, and set the script path to `Jenkinsfile`.
-4. Configure a webhook or polling trigger as appropriate for the repository.
-5. Start a build and select the `TEST_SUITE` parameter. It defaults to `smoke`;
-   available choices are `all`, `smoke`, `ui`, `api`, `a11y`, and `visual`.
-
-#### Credentials and reports
-
-Create a Jenkins **Username with password** credential with ID
-`restful-booker-api`. The pipeline binds it only to `API_USER` and
-`API_PASSWORD` while API-containing suites (`api`, `smoke`, and `all`) run;
-values are not printed. The `ui`, `a11y`, and `visual` choices do not require
-this credential. Configure `UI_BASE_URL` and `API_BASE_URL` as agent or job
-environment variables when targeting non-demo environments, using the existing
-variable names.
-
-The Jenkins reporter writes JUnit XML to `test-results/junit.xml` and the HTML
-report to `playwright-report/`. Jenkins publishes the JUnit results and archives
-the HTML report, screenshots, traces, and videos even when tests fail. Reports
-remain in the workspace until Jenkins archives them; Compose cleanup removes only
-its containers, networks, and volumes.
-
-If Docker verification fails, check that Docker is running on the agent, the
-Compose v2 plugin is installed, and the Jenkins service account has permission
-to access `/var/run/docker.sock`. On macOS agents, also ensure the Jenkins
-service PATH includes the Docker CLI location (`/opt/homebrew/bin`,
-`/usr/local/bin`, or Docker Desktop's resources directory). Do not grant broader
-permissions than required.
-
-## Configuration
-
-Targets and credentials are environment variables with public-demo defaults. See `.env.example`.
-
-## Notes
-
-- Both targets are shared public demos, so occasional slowness or data resets are expected. CI retries failures twice and keeps a trace of each retry.
-- `ALLOWED_RULES` in `tests/a11y/accessibility.spec.ts` is empty on purpose. If axe flags something you intend to fix later, add the rule id there with a comment explaining why.
+The API request and response fields used by the account fixture are documented
+by [Automation Exercise's API list](https://automationexercise.com/api_list).

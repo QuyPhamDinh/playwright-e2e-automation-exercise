@@ -5,13 +5,8 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: '0 14 * * *'   # daily canary run against the live demo targets
+    - cron: '0 14 * * *'
   workflow_dispatch:
-    inputs:
-      update_snapshots:
-        description: 'Regenerate visual baselines and upload them as an artifact'
-        type: boolean
-        default: false
 
 env:
   PLAYWRIGHT_VERSION: 1.65.0
@@ -28,7 +23,6 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
-  # Four shards run in parallel; each runs every browser project plus API and a11y.
   test:
     needs: typecheck
     runs-on: ubuntu-latest
@@ -36,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,12 +39,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps
-      - name: Run tests (shard ${{ matrix.shard }}/4)
-        run: >
-          npx playwright test
-          --project=chromium --project=firefox --project=webkit
-          --project=api --project=a11y
-          --shard=${{ matrix.shard }}/4
+      - name: Run tests (shard ${{ matrix.shard }}/2)
+        run: npx playwright test --project=chromium --project=firefox --project=webkit --project=a11y --project=visual --shard=${{ matrix.shard }}/2
       - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -58,8 +48,14 @@ jobs:
           name: blob-report-${{ matrix.shard }}
           path: blob-report
           retention-days: 1
+      - name: Upload diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: test-results
+          retention-days: 7
 
-  # Merges the shard reports into one HTML report with traces, screenshots and videos.
   report:
     needs: test
     if: ${{ !cancelled() }}
@@ -82,53 +78,3 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 14
-
-  # Runs inside the Playwright image so screenshots match the committed Linux baselines.
-  # Skipped automatically until baselines exist in tests/__screenshots__.
-  visual:
-    needs: typecheck
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
-      options: --ipc=host
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check for baselines
-        id: baselines
-        run: |
-          if [ -d tests/__screenshots__ ] && [ -n "$(ls -A tests/__screenshots__)" ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No visual baselines committed yet; skipping."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.baselines.outputs.found == 'true'
-        run: npm ci
-      - if: steps.baselines.outputs.found == 'true'
-        run: npm run test:visual
-        env:
-          HOME: /root
-      - name: Upload visual diffs
-        if: ${{ failure() && steps.baselines.outputs.found == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-diffs
-          path: test-results
-          retention-days: 7
-
-  update-visual-baselines:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
-      options: --ipc=host
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm ci
-      - run: npm run test:visual:update
-        env:
-          HOME: /root
-      - uses: actions/upload-artifact@v4
-        with:
-          name: visual-baselines
-          path: tests/__screenshots__

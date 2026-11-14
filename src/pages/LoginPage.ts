@@ -2,26 +2,38 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class LoginPage extends BasePage {
-  readonly usernameInput: Locator;
+  readonly emailInput: Locator;
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
-  readonly errorMessage: Locator;
+  readonly formRegion: Locator;
+  readonly loggedInAs: Locator;
+  readonly logoutLink: Locator;
 
   constructor(page: Page) {
     super(page);
-    this.usernameInput = page.getByTestId('username');
-    this.passwordInput = page.getByTestId('password');
+    this.emailInput = page.getByTestId('login-email');
+    this.passwordInput = page.getByTestId('login-password');
     this.loginButton = page.getByTestId('login-button');
-    this.errorMessage = page.getByTestId('error');
+    this.formRegion = page.locator('#form .container');
+    this.loggedInAs = page.locator('a').filter({ hasText: 'Logged in as' });
+    this.logoutLink = page.getByText('Logout', { exact: true });
   }
 
-  async login(username: string, password: string): Promise<void> {
-    await this.usernameInput.fill(username);
+  async goto(): Promise<void> {
+    await super.goto('/login');
+  }
+
+  async login(email: string, password: string): Promise<void> {
+    await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.loginButton.click();
   }
 
-  async expectError(message: string | RegExp): Promise<void> {
-    await expect(this.errorMessage).toContainText(message);
+  async expectLoggedInAs(name: string): Promise<void> {
+    await expect(this.loggedInAs).toContainText(`Logged in as ${name}`);
+  }
+
+  async expectLogoutVisible(): Promise<void> {
+    await expect(this.logoutLink).toBeVisible();
   }
 }

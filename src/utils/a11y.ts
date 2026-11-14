@@ -3,17 +3,11 @@ import type { Page, TestInfo } from '@playwright/test';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
-export interface A11yOptions {
-  /** Rule ids to tolerate while a known issue is being fixed. Keep this list short and dated. */
-  allowedRules?: string[];
-}
-
 /**
  * Runs axe on the current page, attaches the full result to the test report,
  * and returns only the serious/critical violations that should fail the build.
  */
-export async function findBlockingViolations(page: Page, testInfo: TestInfo, options: A11yOptions = {}) {
-  const { allowedRules = [] } = options;
+export async function findBlockingViolations(page: Page, testInfo: TestInfo) {
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
 
   await testInfo.attach('axe-violations.json', {
@@ -23,6 +17,5 @@ export async function findBlockingViolations(page: Page, testInfo: TestInfo, opt
 
   return results.violations
     .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .filter((v) => !allowedRules.includes(v.id))
     .map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length }));
 }

@@ -1,26 +1,22 @@
-import { test, expect } from '../../src/fixtures';
-import { AUTH_FILE } from '../../src/config/env';
+import { test, expect } from '@playwright/test';
 import { findBlockingViolations } from '../../src/utils/a11y';
 
-// Add rule ids here only while a known issue is being fixed, with a comment explaining why.
-const ALLOWED_RULES: string[] = [];
+test.describe('Automation Exercise accessibility', () => {
+  test('login and signup page has no serious or critical violations', async ({ page }, testInfo) => {
+    await page.goto('/login');
+    await expect(page.getByRole('heading', { name: 'Login to your account' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'New User Signup!' })).toBeVisible();
 
-test.describe('Accessibility (axe, WCAG A/AA)', () => {
-  test.describe('logged out', () => {
-    test('login page has no serious or critical violations', async ({ loginPage, page }, testInfo) => {
-      await loginPage.goto();
-      const violations = await findBlockingViolations(page, testInfo, { allowedRules: ALLOWED_RULES });
-      expect(violations).toEqual([]);
-    });
+    const violations = await findBlockingViolations(page, testInfo);
+    expect(violations).toEqual([]);
   });
 
-  test.describe('logged in', () => {
-    test.use({ storageState: AUTH_FILE });
+  test('products page has no serious or critical violations', async ({ page }, testInfo) => {
+    await page.goto('/products');
+    await expect(page.getByRole('heading', { name: 'All Products' })).toBeVisible();
+    await expect(page.locator('.product-image-wrapper').first()).toContainText('Blue Top');
 
-    test('product list has no serious or critical violations', async ({ inventoryPage, page }, testInfo) => {
-      await inventoryPage.open();
-      const violations = await findBlockingViolations(page, testInfo, { allowedRules: ALLOWED_RULES });
-      expect(violations).toEqual([]);
-    });
+    const violations = await findBlockingViolations(page, testInfo);
+    expect(violations).toEqual([]);
   });
 });
