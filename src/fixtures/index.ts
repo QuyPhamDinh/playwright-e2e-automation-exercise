@@ -19,30 +19,52 @@ export const test = base.extend<TestFixtures>({
     });
     const account = buildAccount();
     const client = new AccountClient(request);
-    let created = false;
+    let setupSucceeded = false;
 
     try {
       await client.create(account);
-      created = true;
+      setupSucceeded = true;
       await use(account);
     } finally {
-      if (created) {
-        try {
-          await client.delete(account);
-          await testInfo.attach('account-cleanup.json', {
-            body: JSON.stringify({ status: 'deleted', email: account.email }),
-            contentType: 'application/json',
-          });
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.error(`Account cleanup failed for ${account.email}: ${message}`);
-          await testInfo.attach('account-cleanup.json', {
-            body: JSON.stringify({ status: 'failed', error: message }),
-            contentType: 'application/json',
-          });
-        }
+      let cleanupError: Error | undefined;
+
+      try {
+        await client.delete(account);
+      } catch (error: unknown) {
+        cleanupError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Account cleanup failed for ${account.email}: ${cleanupError.message}`);
       }
-      await request.dispose();
+
+      try {
+        const cleanupStatus = cleanupError
+          ? 'failed'
+          : setupSucceeded
+            ? 'deleted'
+            : 'deleted-after-setup-failure';
+        await testInfo.attach('account-cleanup.json', {
+          body: JSON.stringify(
+            cleanupError
+              ? { status: 'failed', error: cleanupError.message }
+              : { status: cleanupStatus, email: account.email },
+          ),
+          contentType: 'application/json',
+        });
+      } catch (error: unknown) {
+        const reportError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Account cleanup report failed for ${account.email}: ${reportError.message}`);
+      }
+
+      try {
+        await request.dispose();
+      } catch (error: unknown) {
+        const disposeError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Account API context disposal failed: ${disposeError.message}`);
+        cleanupError ??= disposeError;
+      }
+
+      if (setupSucceeded && cleanupError && testInfo.status === 'passed') {
+        throw cleanupError;
+      }
     }
   },
 

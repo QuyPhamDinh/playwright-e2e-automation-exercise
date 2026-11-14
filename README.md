@@ -9,6 +9,10 @@ The initial scenario demonstrates API setup, UI verification, and API cleanup:
 4. Verify `Logged in as [name]` and the logout control.
 5. Delete the account through `DELETE /api/deleteAccount` during fixture teardown.
 
+Cleanup is attempted even when account creation returns an unexpected response.
+Cleanup failures are attached and logged; they fail an otherwise successful
+test without replacing an original test failure.
+
 The accessibility suite runs `@axe-core/playwright` against the login/signup
 and products pages with WCAG 2.0 and 2.1 A/AA tags. It attaches all detected
 violations to the report, fails on serious or critical findings, and keeps
@@ -18,7 +22,7 @@ lower-impact findings visible for investigation.
 
 | Area | How it's done |
 |---|---|
-| Fixtures | A test-scoped account fixture creates and deletes an account and disposes its API context |
+| Fixtures | A test-scoped account fixture creates and deletes an account, handles partial setup, and disposes its API context |
 | API client | Typed, form-encoded Automation Exercise account client with separate HTTP and application-code validation |
 | Page objects | Login page object using `data-qa` locators and web-first assertions |
 | Test data | UUID-based account factory, safe for parallel workers and retries |
