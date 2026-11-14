@@ -112,11 +112,18 @@ application findings, not suppressed or treated as automation failures.
 
 `.github/workflows/playwright.yml` runs type checking, then runs two Playwright
 shards inside the pinned `mcr.microsoft.com/playwright:v1.65.0-noble` image.
-The shards cover the integrated UI/API scenario, accessibility, and visual
-projects, then merge their blob reports into one HTML report. This is the same
-image and `linux/amd64` target used by Compose. It retains diagnostic
-artifacts from failed tests. Jenkins uses the same Docker Compose `tests`
-service and offers `all`, `smoke`, `ui`, `a11y`, and `visual` suite choices.
+The blocking shards cover the integrated UI/API scenario and visual projects,
+then merge their blob reports into one HTML report. This is the same image and
+`linux/amd64` target used by Compose. It retains diagnostic artifacts from
+failed tests.
+
+Accessibility runs separately as an advisory audit against the public demo.
+Its serious and critical assertions remain unchanged and findings are
+available in the separate `accessibility-report` artifact, but the
+workflow-level audit is non-blocking. A successful workflow therefore does
+not establish accessibility compliance. Local `npm test` and Jenkins' `all`
+suite still include accessibility and fail when blocking findings exist;
+Jenkins also offers `smoke`, `api`, `ui`, `a11y`, and `visual` suite choices.
 
 The API request and response fields used by the account fixture are documented
 by [Automation Exercise's API list](https://automationexercise.com/api_list).
