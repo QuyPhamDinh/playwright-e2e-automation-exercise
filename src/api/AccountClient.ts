@@ -137,6 +137,18 @@ export class AccountClient {
     return readResponse(response);
   }
 
+  async verifyLoginWithoutEmail(password: string): Promise<AccountResponse> {
+    const response = await this.request.post('verifyLogin', { form: { password } });
+    expect(response.status(), 'verify login without email HTTP status').toBe(200);
+    return readResponse(response);
+  }
+
+  async deleteVerifyLogin(): Promise<AccountResponse> {
+    const response = await this.request.delete('verifyLogin');
+    expect(response.status(), 'unsupported verify login HTTP status').toBe(200);
+    return readResponse(response);
+  }
+
   async delete(account: Pick<Account, 'email' | 'password'>): Promise<AccountResponse> {
     const response = await this.request.delete('deleteAccount', {
       form: { email: account.email, password: account.password },

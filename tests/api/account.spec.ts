@@ -42,4 +42,38 @@ test.describe('Automation Exercise account API', () => {
     expect(authentication.responseCode).toBe(404);
     expect(authentication.message).toBe('User not found!');
   });
+
+  test('TC05 rejects authentication when email is omitted', async ({ apiClient }) => {
+    const response = await apiClient.verifyLoginWithoutEmail('TestOnly!4829');
+
+    expect(response.responseCode).toBe(400);
+    expect(response.message).toBe(
+      'Bad request, email or password parameter is missing in POST request.',
+    );
+  });
+
+  test('TC06 rejects an unsupported authentication method', async ({ apiClient }) => {
+    const response = await apiClient.deleteVerifyLogin();
+
+    expect(response.responseCode).toBe(405);
+    expect(response.message).toBe('This request method is not supported.');
+  });
+
+  test('TC07 deletes an account and prevents subsequent authentication', async ({
+    account,
+    apiClient,
+    markAccountDeleted,
+  }) => {
+    const validAuthentication = await apiClient.verifyLogin(account.email, account.password);
+    expect(validAuthentication.responseCode).toBe(200);
+
+    const deletion = await apiClient.delete(account);
+    expect(deletion.responseCode).toBe(200);
+    expect(deletion.message).toBe('Account deleted!');
+    markAccountDeleted();
+
+    const authentication = await apiClient.verifyLogin(account.email, account.password);
+    expect(authentication.responseCode).toBe(404);
+    expect(authentication.message).toBe('User not found!');
+  });
 });

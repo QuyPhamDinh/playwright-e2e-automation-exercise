@@ -7,9 +7,17 @@ import { ProductsPage } from '../pages/ProductsPage';
 
 type TestFixtures = {
   account: Account;
+  accountState: AccountState;
   apiClient: AccountClient;
+  markAccountDeleted: () => void;
   loginPage: LoginPage;
   productsPage: ProductsPage;
+};
+
+type AccountState = {
+  account: Account;
+  setupSucceeded: boolean;
+  deleted: boolean;
 };
 
 export const test = base.extend<TestFixtures>({
@@ -34,7 +42,7 @@ export const test = base.extend<TestFixtures>({
     }
   },
 
-  account: async ({ playwright }, use, testInfo) => {
+  accountState: async ({ playwright }, use, testInfo) => {
     const request = await playwright.request.newContext({
       baseURL: env.apiBaseUrl,
       extraHTTPHeaders: { Accept: 'application/json' },
@@ -42,27 +50,33 @@ export const test = base.extend<TestFixtures>({
     const account = buildAccount();
     const client = new AccountClient(request);
     let setupSucceeded = false;
+    const state: AccountState = { account, setupSucceeded: false, deleted: false };
 
     try {
       await client.create(account);
       setupSucceeded = true;
-      await use(account);
+      state.setupSucceeded = true;
+      await use(state);
     } finally {
       let cleanupError: Error | undefined;
 
-      try {
-        await client.delete(account);
-      } catch (error: unknown) {
-        cleanupError = error instanceof Error ? error : new Error(String(error));
-        console.error(`Account cleanup failed for ${account.email}: ${cleanupError.message}`);
+      if (!state.deleted) {
+        try {
+          await client.delete(account);
+        } catch (error: unknown) {
+          cleanupError = error instanceof Error ? error : new Error(String(error));
+          console.error(`Account cleanup failed for ${account.email}: ${cleanupError.message}`);
+        }
       }
 
       try {
         const cleanupStatus = cleanupError
           ? 'failed'
-          : setupSucceeded
-            ? 'deleted'
-            : 'deleted-after-setup-failure';
+          : state.deleted
+            ? 'already-deleted'
+            : setupSucceeded
+              ? 'deleted'
+              : 'deleted-after-setup-failure';
         await testInfo.attach('account-cleanup.json', {
           body: JSON.stringify(
             cleanupError
@@ -90,6 +104,10 @@ export const test = base.extend<TestFixtures>({
     }
   },
 
+  account: async ({ accountState }, use) => use(accountState.account),
+  markAccountDeleted: async ({ accountState }, use) => use(() => {
+    accountState.deleted = true;
+  }),
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   productsPage: async ({ page }, use) => use(new ProductsPage(page)),
 });
