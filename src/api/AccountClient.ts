@@ -115,12 +115,16 @@ export class AccountClient {
   constructor(private readonly request: APIRequestContext) {}
 
   async create(account: Account): Promise<AccountResponse> {
-    const response = await this.request.post('createAccount', { form: formData(account) });
-    expect(response.status(), 'account creation HTTP status').toBe(200);
-    const body = await readResponse(response);
+    const body = await this.createAttempt(account);
     expect(body.responseCode, 'account creation application response code').toBe(201);
     expect(body.message, 'account creation message').toBe('User created!');
     return body;
+  }
+
+  async createAttempt(account: Account): Promise<AccountResponse> {
+    const response = await this.request.post('createAccount', { form: formData(account) });
+    expect(response.status(), 'account creation HTTP status').toBe(200);
+    return readResponse(response);
   }
 
   async getUserDetailByEmail(email: string): Promise<UserDetailResponse> {

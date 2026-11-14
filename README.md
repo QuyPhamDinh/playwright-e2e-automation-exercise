@@ -33,9 +33,10 @@ lower-impact findings visible for investigation.
 | Docker | The same Playwright image is used locally and in CI |
 
 The API suite creates a unique synthetic account per test, validates account
-creation, lookup, and authentication responses, and removes created accounts
-during fixture teardown. Negative authentication cases change only one input at
-a time. Passwords are not included in logs or report attachments.
+creation, lookup, authentication, duplicate-account rejection, and deletion
+responses, and removes created accounts during fixture teardown. Negative
+authentication cases change only one input at a time. Passwords are not
+included in logs or report attachments.
 
 ## Run it
 

@@ -76,4 +76,37 @@ test.describe('Automation Exercise account API', () => {
     expect(authentication.responseCode).toBe(404);
     expect(authentication.message).toBe('User not found!');
   });
+
+  test('TC08 rejects duplicate creation and preserves the original account', async ({
+    account,
+    apiClient,
+  }) => {
+    const duplicateAccount = {
+      ...account,
+      name: 'Different Name',
+      password: 'Different!9999',
+    };
+    const duplicateCreation = await apiClient.createAttempt(duplicateAccount);
+
+    expect(duplicateCreation.responseCode).toBe(400);
+    expect(duplicateCreation.message).toBe('Email already exists!');
+
+    const details = await apiClient.getUserDetailByEmail(account.email);
+    expect(details.user.name).toBe(account.name);
+    expect(details.user.email).toBe(account.email);
+
+    const originalAuthentication = await apiClient.verifyLogin(
+      account.email,
+      account.password,
+    );
+    expect(originalAuthentication.responseCode).toBe(200);
+    expect(originalAuthentication.message).toBe('User exists!');
+
+    const duplicateAuthentication = await apiClient.verifyLogin(
+      account.email,
+      duplicateAccount.password,
+    );
+    expect(duplicateAuthentication.responseCode).toBe(404);
+    expect(duplicateAuthentication.message).toBe('User not found!');
+  });
 });
